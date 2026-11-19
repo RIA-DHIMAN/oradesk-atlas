@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client-atlas"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_ATLAS_URI")
+}
+
+model User {
+  id            String     @id @default(uuid()) @map("_id")
+  loginId       String     @unique
+  name          String
+  role          String     @default("STAFF")
+  plainPasscode String?
+  passcodeHash  String
+  isActive      Boolean    @default(true)
+  lastIp        String?
+  lastLogin     DateTime?
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Session {
+  id           String   @id @default(uuid()) @map("_id")
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?
+  userAgent    String?
+  deviceLabel  String?
+  lastActive   DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @map("_id")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  ipAddress String?
+  device    String?
+  details   String?
+  timestamp DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Document {
+  mongoId    String   @id @default(auto()) @map("_id") @db.ObjectId
+  collection String
+  id         String
+  body       String
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@unique([collection, id])
+}
+
+model Metadata {
+  key   String @id @map("_id")
+  value String
+}
